@@ -2,22 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv14ad4tye5dx"
-path="res://.godot/imported/quit_button.png-86de0db68e0b74f4e26533b600dc156e.ctex"
+uid="uid://qxrpccyhwxkt"
+path="res://.godot/imported/quit_button.png-5b7ba2a459ede37bf3a1c3d049a274af.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/quit_button/quit_button.png"
-dest_files=["res://.godot/imported/quit_button.png-86de0db68e0b74f4e26533b600dc156e.ctex"]
+source_file="res://quit_button.png"
+dest_files=["res://.godot/imported/quit_button.png-5b7ba2a459ede37bf3a1c3d049a274af.ctex"]
 
 [params]
 
 compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
