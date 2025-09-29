@@ -3,7 +3,7 @@ extends EditorPlugin
 
 const PLUGIN_NAME := "QuitButton"
 
-const PLUGIN_ICON := preload("res://addons/quit_button/quit_button.svg")
+const PLUGIN_ICON := preload("./quit_button.svg")
 
 const ENSURE_SCRIPT_DOCS:Array[Script] = [
 	preload("./restart_button.gd"),
