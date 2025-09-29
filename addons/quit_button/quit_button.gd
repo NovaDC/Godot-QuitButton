@@ -1,47 +1,52 @@
 @tool
-@icon("res://addons/quit_button/quit_button.svg")
+@icon("./quit_button.svg")
 class_name QuitButton
 extends Button
 
 ## QuitButton
 ##
 ## Quits the application when pressed,
-## falling back to a defined [member removal_behaviour] if doing so is impossible.[br]
+## falling back to a defined [member alternative_behaviour] if doing so is impossible.[br]
 ## NOTE: It's highly suggested to modify the [member Button.process_mode] of this
-## in order for it to process with the tree's expected [member SceneTree.paused] state.
+## in order for it to process in the tree's [member SceneTree.paused] state.
 
 ## An enumeration outlining method of how this button should remove itself when
 ## the given environment (ex. a Web Browser, a [i]compliant[/i] iOS app) cannot
 ## allow for the user quit the application by pressing a button like this.
-enum RemovalBehaviour{
+enum AlternativeBehaviour{
 	NONE, ## Do not remove
-	DISABLE, ## Visibly disable the button
 	FREE, ## Free the button
 	HIDE, ## Make the button invisible
-	ALERT_INSTRUCTIONS, ## Show a [method OS.alert] dialog with the message specified in [member alert_instructions].
+	DISABLE, ## Visibly disable the button
+	## Show a [method OS.alert] dialog with the message specified in [member alert_instructions].
+	ALERT_INSTRUCTIONS,
 }
 
-## Names (as returned by [method OS.get_name], matching the case) of platforms that
-## will not allow for [method SceneTree.quit] to work as expected.
+## Names (as returned by [method OS.get_name], matching case) of platforms that
+## will not allow (both because it's impossible (ex. Web),
+## or because it is not allowed (ex. iOS)) for [method SceneTree.quit] to work as expected.
 const IMPOSSIBLE_PLATFORMS := ["Web", "iOS"]
 
-## The content of the popup to show when this button is pressed and this button uses
-## [constant RemovalBehaviour.ALERT_INSTRUCTIONS] to 'remove' itself.
-## Has no effect when [member removal_behaviour] is not set to
-## [constant RemovalBehaviour.ALERT_INSTRUCTIONS] or when [method is_impossible]
-## is [code]false[/code].
-@export_multiline var alert_instructions:String = "You may manually exit this software"
-
-## When the target platform is unquitable, this the button will be 'removed'
-## using this specified [enum RemovalBehaviour].
-@export_enum("None", "Disable", "Free", "Hide", "Alert")
-var removal_behaviour:int = RemovalBehaviour.FREE:
+## When the target environment is unquitable for whatever reason,
+## this the button will use this [enum AlternativeBehaviour].[br]
+## See [enum AlternativeBehaviour] for information on what each setting does,
+## and [method use_alternate] to check when this applies.
+@export_enum("None", "Free", "Hide", "Disable", "Alert")
+var alternative_behaviour:int = AlternativeBehaviour.FREE:
 	get:
-		return removal_behaviour
+		return alternative_behaviour
 	set(_value):
-		removal_behaviour = _value
+		alternative_behaviour = _value
 		notify_property_list_changed()
 
+## The content of the popup to show when this button is pressed and this button uses
+## [constant ALERT_INSTRUCTIONS].
+## Has no effect when [member alternative_behaviour] is not set to
+## [constant ALERT_INSTRUCTIONS] or when [method use_alternate]
+## is [code]false[/code].
+@export_multiline var alert_instructions:String = "You may manually exit this software."
+
+@export_group("Exit Behaviour")
 ## Exit code to used when exiting.
 @export var exit_code:int = 0
 
@@ -54,30 +59,30 @@ var removal_behaviour:int = RemovalBehaviour.FREE:
 @export var send_close_request_notification := true
 
 ## Returns [code]true[/code] when this button should not attempt to quit
-## and instead act as specified by [member removal_behaviour].[br]
-## NOTE: While having [method OS.get_name] return a name within
+## and instead act as specified by [member alternative_behaviour].[br]
+## NOTE: While having [method OS.get_name] return a name thats in
 ## [constant IMPOSSIBLE_PLATFORMS] will result in this returning true,
 ## this also returns true when this button is not in a tree
 ## (a tree reference is necessary in order to call [method SceneTree.quit] in the first place).
-func is_impossible() -> bool:
+func use_alternate() -> bool:
 	return (not is_inside_tree()) or OS.get_name() in IMPOSSIBLE_PLATFORMS
 
 func _ready():
 	if Engine.is_editor_hint():
 		return
 	toggle_mode = false
-	if is_impossible():
-		match(removal_behaviour):
-			RemovalBehaviour.FREE:
+	if use_alternate():
+		match(alternative_behaviour):
+			AlternativeBehaviour.FREE:
 				queue_free()
-			RemovalBehaviour.HIDE:
+			AlternativeBehaviour.HIDE:
 				hide()
-			RemovalBehaviour.DISABLE:
+			AlternativeBehaviour.DISABLE:
 				disabled = true
-			RemovalBehaviour.NONE, RemovalBehaviour.ALERT_INSTRUCTIONS:
+			AlternativeBehaviour.NONE, AlternativeBehaviour.ALERT_INSTRUCTIONS:
 				pass
 			var x:
-				push_warning("Unknown RemovalBehaviour: " + str(x))
+				push_warning("Unknown AlternativeBehaviour: " + str(x))
 
 func _property_can_revert(property: StringName) -> bool:
 	match(property):
@@ -97,15 +102,15 @@ func _validate_property(property: Dictionary):
 	match(property.name):
 		"toggle_mode":
 			property.usage &= ~PROPERTY_USAGE_EDITOR | ~PROPERTY_USAGE_STORAGE
-		"alert_instructions" when removal_behaviour != RemovalBehaviour.ALERT_INSTRUCTIONS:
+		"alert_instructions" when alternative_behaviour != AlternativeBehaviour.ALERT_INSTRUCTIONS:
 			property.usage &= ~PROPERTY_USAGE_EDITOR
 
 func _pressed():
 	_on_quit()
 
 func _on_quit():
-	if is_impossible():
-		if removal_behaviour == RemovalBehaviour.ALERT_INSTRUCTIONS:
+	if use_alternate():
+		if alternative_behaviour == AlternativeBehaviour.ALERT_INSTRUCTIONS:
 			OS.alert(alert_instructions, tr("Quit"))
 	else:
 		var tree := get_tree()
