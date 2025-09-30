@@ -11,8 +11,8 @@ config_version=5
 [application]
 
 config/name="Godot-QuitButton"
-config/description="Adds a configurable button that quits the application when pressed."
-config/version="1.0.0.0"
+config/description="Adds buttons for quitting and restarting the application when pressed, with configurable alternative methods of behaviour if doing so is impossible."
+config/version="1.1.0.0"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="uid://qxrpccyhwxkt"
 
