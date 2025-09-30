@@ -58,6 +58,43 @@ var alternative_behaviour:int = AlternativeBehaviour.FREE:
 ## Done [i]after[/i] [member unpause_before_quit].
 @export var send_close_request_notification := true
 
+@export_group("Extra Input Handling")
+
+## The [StringName] of an [Input] action to use as another
+## means of activation (outside and ignoring the traditional means of ui focus
+## and the [code]"ui_accept"[/code] input action, which will still applies separately).[br]
+## When empty, this will ignore any inputs outside that of any other button.[br]
+## This is only suggested in to be used in situations where the input event
+## will not be used for any other purpose
+## (ex, not in a pause menu that appears over a game, but instead in a game's main menu).
+@export var catch_input_action:StringName = "":
+	get:
+		return catch_input_action
+	set(_value):
+		catch_input_action = _value
+		notify_property_list_changed()
+
+## When set, this button will only receive inputs from [method Control._gui_input],
+## which confines the input event se in [member catch_input_action] to only be caught
+## when this or one fo it's ancestors has gui focus,
+## and after handling all [method Node._input] methods.
+## Toggling this off allows for this to receive [member catch_input_action]
+## outside of the usual gui hierarchy; potentially fixing instances where
+## the input event may not be recognised but possibly overriding other
+## valid uses of this event. This is not suggested to be turned off
+## unless the hierarchy of the scene this is used in requires it.
+## NOTE: For safety this will never be caught when running in editor,
+## even when attached to something other than scenes being edited.
+@export var catch_only_gui_input := true
+
+## Weather or not a valid caught [InputEvent] should be matched exactly
+## (just like [method InputEvent.is_action_pressed]'s [param exact_match]).
+@export var catch_input_action_exact := true
+
+## Weather or not a valid caught [InputEvent] should match echo events
+## (just like [method InputEvent.is_action_pressed]'s [param allow_echo]).
+@export var catch_input_action_echo := false
+
 ## Returns [code]true[/code] when this button should not attempt to quit
 ## and instead act as specified by [member alternative_behaviour].[br]
 ## NOTE: While having [method OS.get_name] return a name thats in
@@ -104,9 +141,37 @@ func _validate_property(property: Dictionary):
 			property.usage &= ~PROPERTY_USAGE_EDITOR | ~PROPERTY_USAGE_STORAGE
 		"alert_instructions" when alternative_behaviour != AlternativeBehaviour.ALERT_INSTRUCTIONS:
 			property.usage &= ~PROPERTY_USAGE_EDITOR
+		"catch_only_gui_input",\
+		"catch_input_action_exact",\
+		"catch_input_action_echo" when catch_input_action.is_empty():
+			property.usage &= ~PROPERTY_USAGE_EDITOR
 
 func _pressed():
 	_on_quit()
+
+func _input(event: InputEvent) -> void:
+	if catch_only_gui_input or catch_input_action.is_empty():
+		return
+	_on_input(event)
+
+func _gui_input(event: InputEvent) -> void:
+	if catch_input_action.is_empty():
+		return
+	_on_input(event)
+
+func _on_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
+	if event.is_action_pressed(catch_input_action, catch_input_action_echo, catch_input_action_exact):
+		if action_mode == ActionMode.ACTION_MODE_BUTTON_PRESS:
+			_on_quit()
+		else:
+			set_pressed_no_signal(true)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_released(catch_input_action, catch_input_action_exact):
+		if action_mode == ActionMode.ACTION_MODE_BUTTON_RELEASE:
+			_on_quit()
+			get_viewport().set_input_as_handled()
 
 func _on_quit():
 	if use_alternate():
